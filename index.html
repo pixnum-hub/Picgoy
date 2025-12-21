@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Picgoy - AI Image Generator</title>
+
+<style>
+:root {
+  --bg:#eef2f7;
+  --glass:rgba(255,255,255,0.25);
+  --border:rgba(255,255,255,0.4);
+  --text:#222;
+  --btn:rgba(76,175,80,0.75);
+  --blur:14px;
+}
+[data-theme="dark"]{
+  --bg:#121212;
+  --glass:rgba(40,40,40,0.55);
+  --border:rgba(255,255,255,0.15);
+  --text:#f5f5f5;
+  --btn:rgba(33,150,243,0.75);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  background:var(--bg);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:Arial,sans-serif;
+  padding:12px;
+}
+
+/* APP FRAME */
+.app{
+  width:100%;
+  max-width:520px;
+  background:var(--glass);
+  backdrop-filter:blur(var(--blur));
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:18px 14px 20px;
+  color:var(--text);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+}
+
+/* DARK MODE */
+.toggle{
+  position:absolute;
+  top:14px;
+  right:14px;
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  border:none;
+  background:var(--btn);
+  color:#fff;
+  font-size:18px;
+  cursor:pointer;
+}
+
+h1{
+  margin:6px 0 14px;
+  font-size:1.6rem;
+}
+
+/* INPUTS */
+.row{
+  width:100%;
+  display:flex;
+  gap:8px;
+  margin-bottom:10px;
+}
+
+input,select,button{
+  width:100%;
+  padding:11px;
+  border-radius:16px;
+  border:none;
+  background:rgba(255,255,255,0.25);
+  backdrop-filter:blur(var(--blur));
+  font-size:16px;
+  color:var(--text);
+}
+
+button{
+  background:var(--btn);
+  color:#fff;
+  cursor:pointer;
+}
+
+/* BUTTON LINES */
+.line{
+  width:100%;
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  margin-bottom:10px;
+}
+.line button{flex:0 0 auto}
+
+/* GALLERY */
+#gallery{
+  width:100%;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:10px;
+  margin-top:10px;
+}
+.card{
+  background:var(--glass);
+  padding:8px;
+  border-radius:16px;
+  text-align:center;
+}
+.card img{
+  width:100%;
+  border-radius:14px;
+}
+
+/* SPINNER */
+#spinner{
+  display:none;
+  position:fixed;
+  width:60px;
+  height:60px;
+  border:6px solid rgba(255,255,255,0.3);
+  border-top:6px solid var(--btn);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  z-index:999;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+footer{
+  margin-top:14px;
+  font-size:13px;
+  text-align:center;
+}
+</style>
+</head>
+
+<body data-theme="light">
+
+<div class="app">
+
+<button class="toggle" id="themeBtn">🌙</button>
+<h1>Picgoy</h1>
+
+<div class="row">
+  <input id="prompt" placeholder="Describe the image...">
+</div>
+
+<div class="row">
+  <button id="generateBtn">Generate</button>
+  <button id="resetBtn">Reset</button>
+</div>
+
+<!-- PRESET BUTTONS -->
+<div class="line">
+  <button data-preset="Fantasy landscape">Fantasy</button>
+  <button data-preset="Cartoon character">Cartoon</button>
+  <button data-preset="Cyberpunk city">Cyberpunk</button>
+  <button data-preset="Space adventure">Space</button>
+  <button data-preset="Photorealistic">Photorealistic</button>
+  <button data-preset="Surreal landscape">Surreal</button>
+  <button data-preset="Futuristic city">Futuristic</button>
+  <button data-preset="Mythical creature">Mythical</button>
+  <button data-preset="Abstract art">Abstract</button>
+</div>
+
+<!-- STYLE BUTTONS -->
+<div class="line">
+  <button data-style="Anime">Anime</button>
+  <button data-style="Watercolor">Watercolor</button>
+  <button data-style="Photorealistic">Photo</button>
+  <button data-style="Pixel art">Pixel</button>
+  <button data-style="Cyberpunk">Cyberpunk</button>
+  <button data-style="Oil painting">Oil</button>
+  <button data-style="Minimalist">Minimalist</button>
+  <button data-style="Neon Cyberpunk">Neon Cyberpunk</button>
+  <button data-style="Retro/Vaporwave">Vaporwave</button>
+  <button data-style="Low poly">Low Poly</button>
+</div>
+
+<div class="row">
+  <select id="ratio">
+    <option value="1:1">1:1</option>
+    <option value="16:9">16:9</option>
+    <option value="9:16">9:16</option>
+  </select>
+  <select id="size">
+    <option value="512">512px</option>
+    <option value="768">768px</option>
+    <option value="1024">1024px</option>
+  </select>
+</div>
+
+<div id="gallery"></div>
+<footer>© Manik Roy 2025. All Rights Reserved.</footer>
+</div>
+
+<div id="spinner"></div>
+
+<script>
+const promptInput=document.getElementById("prompt");
+const gallery=document.getElementById("gallery");
+const spinner=document.getElementById("spinner");
+const ratio=document.getElementById("ratio");
+const size=document.getElementById("size");
+const themeBtn=document.getElementById("themeBtn");
+
+let style="";
+
+/* PRESETS */
+document.querySelectorAll("[data-preset]").forEach(b=>{
+  b.onclick=()=>promptInput.value=b.dataset.preset;
+});
+document.querySelectorAll("[data-style]").forEach(b=>{
+  b.onclick=()=>style=b.dataset.style;
+});
+
+/* GENERATE */
+document.getElementById("generateBtn").onclick=()=>{
+  if(!promptInput.value) return alert("Enter a prompt");
+  spinner.style.display="block";
+
+  const [w,h]=ratio.value.split(":");
+  const base=+size.value;
+  const height=Math.round(base*(h/w));
+  const text=promptInput.value+(style?` in ${style} style`:"");
+
+  const url=`https://image.pollinations.ai/prompt/${encodeURIComponent(text)}?width=${base}&height=${height}`;
+
+  const img=new Image();
+  img.src=url;
+  img.onload=()=>{
+    spinner.style.display="none";
+    gallery.innerHTML=`
+      <div class="card">
+        <img src="${url}">
+        <button onclick="download('${url}')">Download</button>
+      </div>`+gallery.innerHTML;
+  };
+  img.onerror=()=>{spinner.style.display="none";alert("Generation failed");}
+};
+
+/* RESET */
+document.getElementById("resetBtn").onclick=()=>{
+  promptInput.value="";
+  style="";
+  gallery.innerHTML="";
+};
+
+/* THEME */
+themeBtn.onclick=()=>{
+  document.body.dataset.theme=
+    document.body.dataset.theme==="light"?"dark":"light";
+  themeBtn.textContent=document.body.dataset.theme==="dark"?"☀️":"🌙";
+};
+
+function download(u){
+  const a=document.createElement("a");
+  a.href=u;a.download="picgoy.png";a.click();
+}
+</script>
+
+</body>
+</html>
