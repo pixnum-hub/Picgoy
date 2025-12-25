@@ -1,0 +1,21 @@
+{
+  "name": "Picgoy AI",
+  "short_name": "Picgoy",
+  "description": "AI Image Generator with presets, styles, and gallery",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#00f0ff",
+  "theme_color": "#00e0ff",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
